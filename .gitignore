@@ -1,0 +1,26 @@
+# Maven build artifacts
+target/
+build-target/
+.._.._.._.._.restlab-build_target_test-classes/
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# OS specific files
+Thumbs.db
+.DS_Store
+
+# Logs and temp files
+*.log
+test.txt

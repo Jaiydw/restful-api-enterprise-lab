@@ -1,0 +1,84 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: restful-api-enterprise-lab
+
+  # Database Configuration (In-Memory H2 for seamless plug-and-play execution)
+  datasource:
+    url: jdbc:h2:mem:restlabdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driverClassName: org.h2.Driver
+    username: sa
+    password: 
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: false
+
+  # JPA & Hibernate Configuration
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        generate_statistics: true
+
+  # Caching Configuration (Experiment 2.2.2)
+  cache:
+    type: caffeine
+    cache-names:
+      - posts
+      - postSummaries
+
+# Application Custom Security, JWT & AES Cryptography Configuration
+app:
+  jwt:
+    # 256-bit HMAC SHA secret (Base64 encoded)
+    secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    access-token-expiration-ms: 900000      # 15 minutes
+    refresh-token-expiration-ms: 604800000  # 7 days
+  security:
+    cors:
+      allowed-origins:
+        - "http://localhost:3000"
+        - "http://localhost:5173"
+        - "http://localhost:8080"
+      allowed-methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - PATCH
+        - OPTIONS
+      allowed-headers: "*"
+      allow-credentials: true
+  encryption:
+    # 256-bit AES Master Key for Sensitive OAuth/Credentials Storage (Exp 2.3.2)
+    aes-secret-key: EnterpriseAESSecretKeyForRestLab2026!
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+# Structured Logging with MDC Correlation ID (Exp 2.1.2)
+logging:
+  level:
+    root: INFO
+    com.example.restlab: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr([%15.15t]){faint} %clr([corr-id:%X{correlationId:-none}]){magenta} %clr(%-40.40logger{39}){cyan} : %m%n"

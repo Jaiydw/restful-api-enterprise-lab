@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise RESTful APIs Lab - Interactive Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #0b0f19;
+            --bg-card: rgba(18, 24, 38, 0.85);
+            --bg-card-hover: rgba(26, 34, 53, 0.95);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-active: rgba(99, 102, 241, 0.4);
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.25);
+            --accent: #10b981;
+            --accent-glow: rgba(16, 185, 129, 0.25);
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: radial-gradient(circle at top right, #171d33 0%, #0b0f19 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            line-height: 1.5;
+            padding-bottom: 60px;
+        }
+
+        header {
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(11, 15, 25, 0.8);
+        }
+
+        .header-content {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary), #a855f7);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #fff;
+            box-shadow: 0 0 16px var(--primary-glow);
+        }
+
+        .brand h1 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        .brand p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            background: rgba(16, 185, 129, 0.1);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.85); }
+        }
+
+        .link-btn {
+            font-size: 0.8rem;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-main);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .link-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary);
+        }
+
+        main {
+            max-width: 1280px;
+            margin: 24px auto;
+            padding: 0 24px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+            margin-bottom: 24px;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: none;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .tab-btn.active {
+            color: #fff;
+            background: var(--primary);
+            box-shadow: 0 0 16px var(--primary-glow);
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(8px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .card-badge {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-purple { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+        .badge-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+        .badge-green { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .badge-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 8px var(--primary-glow);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        .btn-accent {
+            background: var(--accent);
+            box-shadow: 0 0 12px var(--accent-glow);
+        }
+
+        .console-output {
+            background: #050811;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: #38bdf8;
+            max-height: 280px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin-top: 14px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .post-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .post-info h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .post-info p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .tag-pill {
+            display: inline-block;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+            margin-right: 4px;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-content">
+            <div class="brand">
+                <div class="brand-logo">SB</div>
+                <div>
+                    <h1>Enterprise RESTful APIs Lab</h1>
+                    <p>Spring Boot 3.4.3 | Experiments 2.1.1 to 2.3.2</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="status-badge">
+                    <span class="status-dot"></span>
+                    <span id="server-status">API Server Running (:8080)</span>
+                </div>
+                <a href="/h2-console" target="_blank" class="link-btn">H2 Console</a>
+                <a href="/actuator/health" target="_blank" class="link-btn">Actuator Health</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('auth')">Exp 2.3.1 & 2.3.2: Auth & Token Rotation</button>
+            <button class="tab-btn" onclick="switchTab('posts')">Exp 2.1.1 & 2.1.2: CRUD, Validation & Exceptions</button>
+            <button class="tab-btn" onclick="switchTab('pagination')">Exp 2.2.1: Pagination & Sorting</button>
+            <button class="tab-btn" onclick="switchTab('performance')">Exp 2.2.2: Performance, JOIN FETCH & Cache</button>
+            <button class="tab-btn" onclick="switchTab('vault')">Exp 2.3.2: AES-256 Credential Vault</button>
+        </div>
+
+        <!-- TAB 1: AUTH & TOKEN ROTATION -->
+        <div id="tab-auth" class="tab-pane active">
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">User Authentication & Token Issuance</div>
+                        <span class="card-badge badge-purple">Exp 2.3.1</span>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">
+                        Authenticate via Spring Security stateless filter chain. Generates 15-minute JWT Access Token and 7-day Refresh Token.
+                    </p>
+                    <div class="btn-row" style="margin-bottom: 16px;">
+                        <button class="btn btn-secondary" onclick="quickLogin('admin', 'admin123')">🔑 Login as Admin</button>
+                        <button class="btn btn-secondary" onclick="quickLogin('john_doe', 'user123')">👤 Login as John (User)</button>
+                    </div>
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="auth-username" value="admin">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="auth-password" value="admin123">
+                    </div>
+                    <div class="btn-row">
+                        <button class="btn" onclick="login()">Login</button>
+                        <button class="btn btn-secondary" onclick="rotateRefreshToken()">🔄 Rotate Refresh Token (Exp 2.3.2)</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Token Inspector & Correlation Tracer</div>
+                        <span class="card-badge badge-green">MDC & JJWT</span>
+                    </div>
+                    <div class="stat-grid">
+                        <div class="stat-box">
+                            <div class="stat-value" id="user-role-badge">NONE</div>
+                            <div class="stat-label">Active Role</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="user-name-badge">Anonymous</div>
+                            <div class="stat-label">Subject</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="corr-id-badge">None</div>
+                            <div class="stat-label">Correlation ID</div>
+                        </div>
+                    </div>
+                    <label>Active JWT Access Token</label>
+                    <div class="console-output" id="auth-console">// Login to inspect generated JWT and Refresh Token...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: POSTS CRUD, VALIDATION & EXCEPTIONS -->
+        <div id="tab-posts" class="tab-pane">
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Create Post (Bean Validation & CORS)</div>
+                        <span class="card-badge badge-blue">Exp 2.1.1</span>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
+                        Enforces Bean Validation constraints: <code>@NotBlank</code>, <code>@Size(min=3, max=150)</code>.
+                    </p>
+                    <div class="form-group">
+                        <label>Post Title</label>
+                        <input type="text" id="post-title" value="Scalable Architecture with Spring Boot 3.4">
+                    </div>
+                    <div class="form-group">
+                        <label>Post Content</label>
+                        <textarea id="post-content" rows="3">Deep dive into building enterprise microservices with clean layered architecture.</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="post-status">
+                            <option value="PUBLISHED">PUBLISHED</option>
+                            <option value="DRAFT">DRAFT</option>
+                            <option value="SCHEDULED">SCHEDULED</option>
+                        </select>
+                    </div>
+                    <div class="btn-row">
+                        <button class="btn btn-accent" onclick="createPost(false)">Submit Valid Post</button>
+                        <button class="btn btn-secondary" style="color: #f87171;" onclick="createPost(true)">⚠️ Trigger Validation Error (Exp 2.1.2)</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Standardized Response / Error Response</div>
+                        <span class="card-badge badge-amber">Exp 2.1.2</span>
+                    </div>
+                    <label>Response Envelope (ApiResponse&lt;T&gt; or ErrorResponse)</label>
+                    <div class="console-output" id="post-console">// Submit a post or trigger validation error to inspect output...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: PAGINATION & SORTING -->
+        <div id="tab-pagination" class="tab-pane">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Spring Data Pageable & Sort Query Builder</div>
+                    <span class="card-badge badge-blue">Exp 2.2.1</span>
+                </div>
+                <div style="display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 140px;">
+                        <label>Page Number</label>
+                        <input type="number" id="page-num" value="0" min="0">
+                    </div>
+                    <div style="flex: 1; min-width: 140px;">
+                        <label>Page Size</label>
+                        <input type="number" id="page-size" value="2" min="1" max="20">
+                    </div>
+                    <div style="flex: 2; min-width: 200px;">
+                        <label>Sort By</label>
+                        <select id="page-sort">
+                            <option value="title,asc">Title (A-Z)</option>
+                            <option value="title,desc">Title (Z-A)</option>
+                            <option value="createdAt,desc">Created Date (Newest first)</option>
+                            <option value="createdAt,asc">Created Date (Oldest first)</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; align-items: flex-end;">
+                        <button class="btn" onclick="fetchPagedPosts()">Fetch Page</button>
+                    </div>
+                </div>
+                <div id="paged-posts-list"></div>
+                <div class="console-output" id="pagination-console">// Click "Fetch Page" to inspect PagedResponse metadata...</div>
+            </div>
+        </div>
+
+        <!-- TAB 4: PERFORMANCE BENCHMARK -->
+        <div id="tab-performance" class="tab-pane">
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">N+1 Query vs JOIN FETCH Optimization</div>
+                        <span class="card-badge badge-purple">Exp 2.2.2</span>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 14px;">
+                        Compare the database overhead between unoptimized lazy loading (1 + 2N queries) vs single-query JOIN FETCH.
+                    </p>
+                    <div class="btn-row">
+                        <button class="btn btn-secondary" onclick="runBenchmark('n-plus-one')">Run N+1 Query Demo</button>
+                        <button class="btn btn-accent" onclick="runBenchmark('join-fetch')">Run Single JOIN FETCH</button>
+                        <button class="btn btn-secondary" onclick="runBenchmark('native-summary')">Native SQL Aggregation</button>
+                    </div>
+                    <div class="console-output" id="query-benchmark-console">// Click a benchmark button to measure execution time...</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Caffeine In-Memory Caching Benchmark</div>
+                        <span class="card-badge badge-green">Sub-millisecond</span>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 14px;">
+                        Executes 5 consecutive reads of Post #1. Iteration 1 incurs database query latency; iterations 2-5 are served directly from RAM cache.
+                    </p>
+                    <button class="btn" onclick="runCacheBenchmark()">⚡ Run 5x Cache Benchmark</button>
+                    <div class="console-output" id="cache-benchmark-console">// Click to benchmark Caffeine Cache Miss vs Cache Hits...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: CREDENTIAL VAULT -->
+        <div id="tab-vault" class="tab-pane">
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">AES-256 GCM Sensitive Credential Vault</div>
+                        <span class="card-badge badge-purple">Exp 2.3.2</span>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 14px;">
+                        Encrypts third-party OAuth secrets and API keys using AES-256 GCM before database persistence.
+                    </p>
+                    <div class="form-group">
+                        <label>Service Name</label>
+                        <input type="text" id="cred-service" value="STRIPE_PAYMENTS">
+                    </div>
+                    <div class="form-group">
+                        <label>Client ID / Public Key</label>
+                        <input type="text" id="cred-client-id" value="client_id_demo_982347102">
+                    </div>
+                    <div class="form-group">
+                        <label>Client Secret (Sensitive)</label>
+                        <input type="text" id="cred-secret" value="client_secret_demo_1234567890">
+                    </div>
+                    <button class="btn btn-accent" onclick="storeCredential()">Encrypt & Store in Vault</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Stored Vault Credentials</div>
+                        <span class="card-badge badge-blue">Masked vs Decrypted</span>
+                    </div>
+                    <button class="btn btn-secondary" onclick="listCredentials()" style="margin-bottom: 12px;">Refresh Vault List</button>
+                    <div class="console-output" id="vault-console">// Click "Refresh Vault List" to inspect AES encrypted credentials...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let currentToken = '';
+        let currentRefreshToken = '';
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
+        }
+
+        async function quickLogin(user, pass) {
+            document.getElementById('auth-username').value = user;
+            document.getElementById('auth-password').value = pass;
+            await login();
+        }
+
+        async function login() {
+            const user = document.getElementById('auth-username').value;
+            const pass = document.getElementById('auth-password').value;
+            const consoleBox = document.getElementById('auth-console');
+
+            try {
+                const res = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+                const data = await res.json();
+                consoleBox.textContent = JSON.stringify(data, null, 2);
+
+                if (data.success && data.data) {
+                    currentToken = data.data.accessToken;
+                    currentRefreshToken = data.data.refreshToken;
+                    document.getElementById('user-role-badge').textContent = data.data.role;
+                    document.getElementById('user-name-badge').textContent = data.data.username;
+                    document.getElementById('corr-id-badge').textContent = data.correlationId || res.headers.get('X-Correlation-ID') || 'N/A';
+                }
+            } catch (err) {
+                consoleBox.textContent = 'Login Error: ' + err.message;
+            }
+        }
+
+        async function rotateRefreshToken() {
+            if (!currentRefreshToken) {
+                alert('Please login first to obtain a refresh token!');
+                return;
+            }
+            const consoleBox = document.getElementById('auth-console');
+            try {
+                const res = await fetch('/api/v1/auth/refresh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refreshToken: currentRefreshToken })
+                });
+                const data = await res.json();
+                consoleBox.textContent = ">>> REFRESH TOKEN ROTATION RESULT:\n" + JSON.stringify(data, null, 2);
+                if (data.success && data.data) {
+                    currentToken = data.data.accessToken;
+                    currentRefreshToken = data.data.refreshToken;
+                }
+            } catch (err) {
+                consoleBox.textContent = 'Rotation Error: ' + err.message;
+            }
+        }
+
+        async function createPost(triggerError) {
+            const consoleBox = document.getElementById('post-console');
+            const payload = triggerError ? {
+                title: "",
+                content: "short",
+                status: null
+            } : {
+                title: document.getElementById('post-title').value,
+                content: document.getElementById('post-content').value,
+                status: document.getElementById('post-status').value,
+                tags: "springboot,rest,lab"
+            };
+
+            try {
+                const res = await fetch('/api/v1/posts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + currentToken
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                consoleBox.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                consoleBox.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        async function fetchPagedPosts() {
+            const page = document.getElementById('page-num').value;
+            const size = document.getElementById('page-size').value;
+            const sort = document.getElementById('page-sort').value;
+            const listContainer = document.getElementById('paged-posts-list');
+            const consoleBox = document.getElementById('pagination-console');
+
+            try {
+                const res = await fetch(`/api/v1/posts?page=${page}&size=${size}&sort=${sort}`, {
+                    headers: { 'Authorization': 'Bearer ' + currentToken }
+                });
+                const data = await res.json();
+                consoleBox.textContent = JSON.stringify(data, null, 2);
+
+                if (data.success && data.data && data.data.content) {
+                    listContainer.innerHTML = data.data.content.map(p => `
+                        <div class="post-card">
+                            <div class="post-info">
+                                <h4>#${p.id} ${p.title}</h4>
+                                <p>Author: ${p.authorUsername || 'System'} | Status: <b>${p.status}</b></p>
+                                <div>${(p.tags || '').split(',').map(t => `<span class="tag-pill">${t}</span>`).join('')}</div>
+                            </div>
+                            <span class="card-badge badge-blue">Page ${data.data.pageNumber + 1}/${data.data.totalPages}</span>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                consoleBox.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        async function runBenchmark(type) {
+            const consoleBox = document.getElementById('query-benchmark-console');
+            consoleBox.textContent = 'Executing ' + type + ' benchmark...';
+            try {
+                const url = type === 'native-summary' ? '/api/v1/posts/native-summary' : `/api/v1/benchmark/${type}`;
+                const res = await fetch(url, {
+                    headers: { 'Authorization': 'Bearer ' + currentToken }
+                });
+                const data = await res.json();
+                consoleBox.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                consoleBox.textContent = 'Benchmark Error: ' + err.message;
+            }
+        }
+
+        async function runCacheBenchmark() {
+            const consoleBox = document.getElementById('cache-benchmark-console');
+            consoleBox.textContent = 'Running 5 consecutive cache requests for Post #1...';
+            try {
+                const res = await fetch('/api/v1/benchmark/cache-test/1');
+                const data = await res.json();
+                consoleBox.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                consoleBox.textContent = 'Cache Benchmark Error: ' + err.message;
+            }
+        }
+
+        async function storeCredential() {
+            const consoleBox = document.getElementById('vault-console');
+            const payload = {
+                serviceName: document.getElementById('cred-service').value,
+                clientId: document.getElementById('cred-client-id').value,
+                clientSecret: document.getElementById('cred-secret').value
+            };
+
+            try {
+                const res = await fetch('/api/v1/vault/credentials', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + currentToken
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                consoleBox.textContent = ">>> STORED IN VAULT (AES-256 ENCRYPTED):\n" + JSON.stringify(data, null, 2);
+            } catch (err) {
+                consoleBox.textContent = 'Vault Error: ' + err.message;
+            }
+        }
+
+        async function listCredentials() {
+            const consoleBox = document.getElementById('vault-console');
+            try {
+                const res = await fetch('/api/v1/vault/credentials', {
+                    headers: { 'Authorization': 'Bearer ' + currentToken }
+                });
+                const data = await res.json();
+                consoleBox.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                consoleBox.textContent = 'Vault List Error: ' + err.message;
+            }
+        }
+
+        // Auto login on load for seamless demonstration
+        window.addEventListener('load', () => {
+            quickLogin('admin', 'admin123');
+        });
+    </script>
+</body>
+</html>

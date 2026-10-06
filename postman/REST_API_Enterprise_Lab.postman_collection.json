@@ -1,0 +1,558 @@
+{
+	"info": {
+		"_postman_id": "7f8b9123-rest-lab-enterprise-experiments",
+		"name": "REST API Enterprise Lab (Exp 2.1.1 - 2.3.2)",
+		"description": "Comprehensive Postman test collection covering all 6 experiments:\n- Exp 2.1.1: REST CRUD, Bean Validation, Standardized Responses, CORS\n- Exp 2.1.2: Global Exception Handling & Correlation ID Logging\n- Exp 2.2.1: Pagination & Sorting via Spring Data Pageable\n- Exp 2.2.2: Caching (Caffeine), N+1 Problem Resolution (JOIN FETCH), Native SQL\n- Exp 2.3.1: JWT Authentication & Role-Based Access Control (RBAC)\n- Exp 2.3.2: AES-256 GCM Sensitive Data Encryption & Refresh Token Rotation",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Exp 2.3.1 & 2.3.2 - Authentication & Token Lifecycle",
+			"item": [
+				{
+					"name": "1. Login (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data) {",
+									"    pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+									"    pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+									"    pm.environment.set('accessToken', jsonData.data.accessToken);",
+									"    pm.environment.set('refreshToken', jsonData.data.refreshToken);",
+									"    console.log('Saved accessToken and refreshToken');",
+									"}",
+									"pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+									"pm.test('Contains Correlation ID', function () { pm.response.to.have.header('X-Correlation-ID'); });"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "2. Login (Regular User - John)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data) {",
+									"    pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+									"    pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"john_doe\",\n    \"password\": \"user123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "3. Register New User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"alice_wonder\",\n    \"password\": \"aliceSecure123\",\n    \"email\": \"alice@example.com\",\n    \"role\": \"ROLE_USER\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "4. Rotate Refresh Token (Exp 2.3.2 Rotation)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data) {",
+									"    pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+									"    pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+									"    console.log('Rotated to new refreshToken: ' + jsonData.data.refreshToken);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "refresh"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Exp 2.1.1 & 2.1.2 - Posts CRUD, Validation & Errors",
+			"item": [
+				{
+					"name": "1. Create Post (Valid)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Architecting Scalable Microservices with Spring Boot\",\n    \"content\": \"Comprehensive guide detailing layered architecture, stateless JWT security, and bean validation best practices.\",\n    \"status\": \"PUBLISHED\",\n    \"tags\": \"architecture,microservices,springboot,java\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/posts",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "posts"]
+						}
+					}
+				},
+				{
+					"name": "2. Create Post (Trigger Bean Validation Error - Exp 2.1.2)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"\",\n    \"content\": \"short\",\n    \"status\": null,\n    \"tags\": \"\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/posts",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "posts"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Post by ID (Caffeine Cacheable - Exp 2.2.2)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/posts/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "posts", "1"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Post by ID (CachePut - Exp 2.2.2)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Getting Started with Spring Boot 3.4 REST APIs (Updated)\",\n    \"content\": \"Updated content demonstrating CachePut automatic refresh.\",\n    \"status\": \"PUBLISHED\",\n    \"tags\": \"springboot,rest,api,v2\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/posts/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "posts", "1"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Post by ID (RBAC & CacheEvict)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/posts/5",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "posts", "5"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Exp 2.1.1 - Scheduling CRUD APIs",
+			"item": [
+				{
+					"name": "1. Create Schedule for Post (Future Validation)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"postId\": 1,\n    \"scheduledTime\": \"2026-12-01T15:30:00\",\n    \"platform\": \"LINKEDIN\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/schedules",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "schedules"]
+						}
+					}
+				},
+				{
+					"name": "2. Get Schedules for Post",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/schedules/post/3",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "schedules", "post", "3"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Exp 2.2.1 - Pagination and Sorting",
+			"item": [
+				{
+					"name": "1. Get Paginated Posts (Page 0, Size 2, Sort Title ASC)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/posts?page=0&size=2&sort=title,asc",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "posts"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "2"
+								},
+								{
+									"key": "sort",
+									"value": "title,asc"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "2. Get Paginated Posts (Page 1, Size 2, Sort CreatedAt DESC)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/posts?page=1&size=2&sort=createdAt,desc",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "posts"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "size",
+									"value": "2"
+								},
+								{
+									"key": "sort",
+									"value": "createdAt,desc"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "3. Filter by Status with Pagination",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/posts/status/PUBLISHED?page=0&size=5",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "posts", "status", "PUBLISHED"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "5"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Exp 2.2.2 - Caching, JOIN FETCH & N+1 Benchmarking",
+			"item": [
+				{
+					"name": "1. Optimized JOIN FETCH Query (Eliminates N+1)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/posts/optimized-fetch",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "posts", "optimized-fetch"]
+						}
+					}
+				},
+				{
+					"name": "2. Native SQL Aggregation Query (Group by Status)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/posts/native-summary",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "posts", "native-summary"]
+						}
+					}
+				},
+				{
+					"name": "3. Benchmark: Unoptimized N+1 Queries",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/benchmark/n-plus-one",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "benchmark", "n-plus-one"]
+						}
+					}
+				},
+				{
+					"name": "4. Benchmark: Single JOIN FETCH Query",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/benchmark/join-fetch",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "benchmark", "join-fetch"]
+						}
+					}
+				},
+				{
+					"name": "5. Benchmark: Caffeine Cache Miss vs Cache Hits",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/benchmark/cache-test/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "benchmark", "cache-test", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Exp 2.3.2 - AES Encryption & Secure Credential Vault",
+			"item": [
+				{
+					"name": "1. Store AES-256 Encrypted Credential",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"serviceName\": \"STRIPE_PAYMENTS\",\n    \"clientId\": \"client_pk_demo_51M0K9823487192837198\",\n    \"clientSecret\": \"client_sk_demo_984719283741928374192837412\",\n    \"accessToken\": \"oauth_stripe_access_token_demo\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/vault/credentials",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "vault", "credentials"]
+						}
+					}
+				},
+				{
+					"name": "2. List Masked Credentials",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/vault/credentials",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "vault", "credentials"]
+						}
+					}
+				},
+				{
+					"name": "3. Decrypt Sensitive Credential (Admin Only)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/vault/credentials/1/decrypt",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "vault", "credentials", "1", "decrypt"]
+						}
+					}
+				}
+			]
+		}
+	]
+}
