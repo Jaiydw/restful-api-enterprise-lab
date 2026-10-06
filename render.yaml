@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: restful-api-enterprise-lab
+    env: docker
+    plan: free
+    region: oregon
+    healthCheckPath: /actuator/health
